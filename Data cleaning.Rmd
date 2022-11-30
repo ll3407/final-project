@@ -87,7 +87,6 @@ After combining, the gdp_population dataset contains data from 266 distinct coun
 ```{r}
 maindata = left_join(deaths, gdp_population, by = c("year","country_name")) 
 
-  head(maindata,100)
 ```
 
 
@@ -139,55 +138,46 @@ death_gender %>%
 
 ### Global trend of HIV mortality per 100k population by age overtime (1990 to 2019)
 ```{r}
-
-```
-
-rate_year = left_join(death_year, gdp_population, by = c("year")) %>%
-  group_by(year) %>% 
-  mutate(
-    HIV_mortality = HIV_death/(population/100000))
-  
-  
-  
-pop_year = gdp_population %>%
-  mutate(population = as.numeric(population)) %>% group_by(year) %>% 
-  summarize(year_pop = sum(population))
-
-  
-```
-
-
-### Sum of HIV death by country and year
-```{r}
-death_sum = maindata %>% 
-  group_by(country_name,year) %>% 
-  summarize(HIV_death = sum(val)) %>% 
+death_age = maindata %>% 
+  group_by(year, age_name) %>% 
+  summarize(HIV_death = sum(val),
+            pop_year  = sum(population, na.rm = T)) %>% 
   mutate(
     HIV_death = as.integer(HIV_death)
   ) %>% 
   mutate(
-    HIV_death = as.numeric(HIV_death)
-  )
+    HIV_death = as.numeric(HIV_death),
+         motality_per_100k =     HIV_death/(pop_year/100000))
 
- 
-  
+death_age %>% 
+  ggplot(aes(x = year, y = motality_per_100k, color = age_name)) + geom_point()
 ```
 
-#### HIV/AIDS deaths per 100,000 population
+### HIV mortality by Country across years
+##Top 10 countries with highest/lowest HIV mortality
+Add a map in this chunk?
 ```{r}
-mortality = left_join(death_sum, gdp_population, by =c("year","country_name")) %>% 
-  filter(year<=2021,year>=1990) %>% 
+death_country = maindata %>% 
+  group_by(country_name) %>% 
+  summarize(HIV_death = sum(val, na.rm = T),
+            pop_year  = sum(population, na.rm = T)) %>% 
   mutate(
-    HIV_mortality = HIV_death/(population/100000))
+    HIV_death = as.integer(HIV_death)
+  ) %>% 
+  mutate(
+    HIV_death = as.numeric(HIV_death),
+         motality_per_100k =     HIV_death/(pop_year/100000))
+
+top_10_high = death_country %>% 
+  filter(motality_per_100k != 'Inf') %>% 
+  arrange(desc(motality_per_100k)) %>% head(n = 10) %>% select(country_name,motality_per_100k) %>% view()
+
+top_10_low = death_country %>% 
+  filter(motality_per_100k != 'Inf') %>% 
+  arrange(motality_per_100k) %>% head(n = 10) %>% select(country_name,motality_per_100k) %>% view()
 ```
 
 
-  
 
-head(mortality,100)
 
-maindata %>% mutate(
-    HIV_death = as.integer(val)
-  ) 
-```
 
